@@ -1,16 +1,9 @@
 import mongoose from "mongoose";
+
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 const Schema = mongoose.Schema;
 const UserSchema = new Schema({
-  image: {
-    type: String,
-    default:
-      "https://www.seekpng.com/png/detail/115-1150053_avatar-png-transparent-png-royalty-free-default-user.png",
-  },
-  category: {
-    type: String,
-    enum: ["student", "teacher", "lawyer"],
-    default: "student",
-  },
   name: {
     type: String,
     required: [true, "Please add a name"],
@@ -28,29 +21,18 @@ const UserSchema = new Schema({
     type: String,
     default: "",
   },
-  role: {
-    type: String,
-    enum: ["user", "publisher"],
-    default: "user",
-  },
-  verified: {
-    type: Boolean,
-    enum: [true, false],
-    default: false,
-  },
-
   password: {
     type: String,
     required: [true, "Please add a password"],
-    minlength: [6, "Password length must be more than 5 characters"],
-    select: false,
-  },
-  resetPasswordToken: String,
-  resetPasswordExpire: Date,
-  createdAt: {
-    type: Date,
-    default: Date.now,
   },
 });
 
+UserSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
+    return next();
+  }
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
 export default mongoose.model("user", UserSchema);
